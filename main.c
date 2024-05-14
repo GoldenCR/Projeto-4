@@ -89,27 +89,16 @@ void apaga_cliente() {
     }
 }
 
-void listar_clientes() {
+void listar_clientes(Cliente *clientes, int num_clientes) {
     system("cls || clear");
     printf("Lista de clientes: \n");
 
-    FILE *arquivo;
-    arquivo = fopen("Cliente.txt", "r");
-    if (arquivo == NULL) {
-        printf("Nenhum cliente cadastrado.\n");
-        return;
+    for (int i = 0; i < num_clientes; i++) {
+        printf("CPF: %d\n", clientes[i].CPF);
+        printf("Conta: %s\n", strcmp(clientes[i].tipoConta, "1") == 0 ? "Comum" : "Plus");
+        printf("Saldo: %.2f\n", clientes[i].saldo);
+        printf("Senha: %s\n\n", clientes[i].senhaUsuario);
     }
-
-    int CPF;
-    char tipoConta[10];
-    float saldo;
-    char senhaUsuario[50];
-
-    while (fscanf(arquivo, "CPF: %d\nConta: %s\nSaldo: %f\nSenha: %s\n", &CPF, tipoConta, &saldo, senhaUsuario) != EOF) {
-        printf("CPF: %d\nConta: %s\nSaldo: %.2f\nSenha: %s\n\n", CPF, tipoConta, saldo, senhaUsuario);
-    }
-
-    fclose(arquivo);
 }
 
 void debitar(Cliente *clientes, int num_clientes) {
@@ -260,8 +249,12 @@ int main() {
                 apaga_cliente();
                 break;
             case 3:
-                listar_clientes();
-                break;
+            if (num_clientes > 0) {
+                listar_clientes(clientes, num_clientes);
+            } else {
+                printf("Nenhum cliente cadastrado.\n");
+            }
+            break;
             case 4:
                 if (num_clientes > 0) {
                     debitar(clientes, num_clientes);
