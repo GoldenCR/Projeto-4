@@ -20,9 +20,8 @@ void menu() {
     printf("4. Débito\n");
     printf("5. Depósito\n");
     printf("6. Extrato\n");
-    printf("7. Transferência entre contas\n");
-    printf("8. Operação livre\n");
-    printf("9. Sair\n");
+    printf("7. Transferência entre contas\n");   
+    printf("8. Sair\n");
 }
 
 void novo_cliente(Cliente *clientes, int *num_clientes) {
@@ -90,27 +89,16 @@ void apaga_cliente() {
     }
 }
 
-void listar_clientes() {
+void listar_clientes(Cliente *clientes, int num_clientes) {
     system("cls || clear");
     printf("Lista de clientes: \n");
 
-    FILE *arquivo;
-    arquivo = fopen("Cliente.txt", "r");
-    if (arquivo == NULL) {
-        printf("Nenhum cliente cadastrado.\n");
-        return;
+    for (int i = 0; i < num_clientes; i++) {
+        printf("CPF: %d\n", clientes[i].CPF);
+        printf("Conta: %s\n", strcmp(clientes[i].tipoConta, "1") == 0 ? "Comum" : "Plus");
+        printf("Saldo: %.2f\n", clientes[i].saldo);
+        printf("Senha: %s\n\n", clientes[i].senhaUsuario);
     }
-
-    int CPF;
-    char tipoConta[10];
-    float saldo;
-    char senhaUsuario[50];
-
-    while (fscanf(arquivo, "CPF: %d\nConta: %s\nSaldo: %f\nSenha: %s\n", &CPF, tipoConta, &saldo, senhaUsuario) != EOF) {
-        printf("CPF: %d\nConta: %s\nSaldo: %.2f\nSenha: %s\n\n", CPF, tipoConta, saldo, senhaUsuario);
-    }
-
-    fclose(arquivo);
 }
 
 void debitar(Cliente *clientes, int num_clientes) {
@@ -145,6 +133,103 @@ void debitar(Cliente *clientes, int num_clientes) {
     printf("\nCPF ou senha incorretos.\n");
 }
 
+void depositar(Cliente *clientes, int num_clientes) {
+    int cpf;
+    float valor;
+    char senha[50];
+
+    printf("\nDepósito em Conta Corrente\n");
+    printf("Digite o CPF: ");
+    scanf("%d", &cpf);
+    printf("Digite sua senha: ");
+    scanf("%s", senha);
+    printf("Digite o valor a ser depositado: ");
+    scanf("%f", &valor);
+
+    for (int i = 0; i < num_clientes; i++) {
+        if (clientes[i].CPF == cpf && strcmp(clientes[i].senhaUsuario, senha) == 0) {
+            clientes[i].saldo += valor;
+            printf("\nDepósito de %.2f realizado com sucesso na conta de CPF %d.\n", valor, cpf);
+            FILE *extrato;
+            extrato = fopen("Extrato.txt", "a");
+            fprintf(extrato, "\nCPF: %d | Depósito de %.2f realizado | Saldo atual: %.2f\n", cpf, valor, clientes[i].saldo);
+            fclose(extrato);
+            return;
+        }
+    }
+
+    printf("\nCPF ou senha incorretos.\n");
+}
+
+void extrato(Cliente *clientes, int num_clientes) {
+    int cpf;
+    char senha[50];
+
+    printf("\nExtrato Bancário\n");
+    printf("Digite o CPF: ");
+    scanf("%d", &cpf);
+    printf("Digite sua senha: ");
+    scanf("%s", senha);
+
+    for (int i = 0; i < num_clientes; i++) {
+        if (clientes[i].CPF == cpf && strcmp(clientes[i].senhaUsuario, senha) == 0) {
+            printf("\nExtrato para o CPF %d:\n", cpf);
+            printf("Tipo de conta: %s\n", clientes[i].tipoConta);
+            printf("Saldo atual: %.2f\n", clientes[i].saldo);
+            printf("-----\n");
+            FILE *extrato;
+            extrato = fopen("Extrato.txt", "a");
+            fprintf(extrato, "\nExtrato para CPF: %d | Saldo atual: %.2f\n", cpf, clientes[i].saldo);
+            fclose(extrato);
+            return;
+        }
+    }
+
+    printf("\nCPF ou senha incorretos.\n");
+}
+
+void transferencia(Cliente *clientes, int num_clientes) {
+    int cpf_origem, cpf_destino;
+    float valor;
+    char senha[50];
+
+    printf("\nTransferência entre Contas\n");
+    printf("Digite o CPF da conta de origem: ");
+    scanf("%d", &cpf_origem);
+    printf("Digite sua senha: ");
+    scanf("%s", senha);
+
+    for (int i = 0; i < num_clientes; i++) {
+        if (clientes[i].CPF == cpf_origem && strcmp(clientes[i].senhaUsuario, senha) == 0) {
+            printf("Digite o CPF da conta de destino: ");
+            scanf("%d", &cpf_destino);
+            printf("Digite o valor a ser transferido: ");
+            scanf("%f", &valor);
+
+            for (int j = 0; j < num_clientes; j++) {
+                if (clientes[j].CPF == cpf_destino) {
+                    if (clientes[i].saldo >= valor) {
+                        clientes[i].saldo -= valor;
+                        clientes[j].saldo += valor;
+                        printf("\nTransferência de %.2f realizada com sucesso da conta de CPF %d para a conta de CPF %d.\n", valor, cpf_origem, cpf_destino);
+                        FILE *extrato;
+                        extrato = fopen("Extrato.txt", "a");
+                        fprintf(extrato, "\nTransferência de %.2f da conta CPF: %d para CPF: %d\n", valor, cpf_origem, cpf_destino);
+                        fclose(extrato);
+                    } else {
+                        printf("\nSaldo insuficiente para realizar a transferência.\n");
+                    }
+                    return;
+                }
+            }
+            printf("\nConta de destino não encontrada.\n");
+            return;
+        }
+    }
+
+    printf("\nCPF ou senha incorretos.\n");
+}
+
 
 
 int main() {
@@ -164,8 +249,12 @@ int main() {
                 apaga_cliente();
                 break;
             case 3:
-                listar_clientes();
-                break;
+            if (num_clientes > 0) {
+                listar_clientes(clientes, num_clientes);
+            } else {
+                printf("Nenhum cliente cadastrado.\n");
+            }
+            break;
             case 4:
                 if (num_clientes > 0) {
                     debitar(clientes, num_clientes);
@@ -173,12 +262,34 @@ int main() {
                     printf("Nenhum cliente cadastrado.\n");
                 }
                 break;
-            case 9:
+            case 5:
+                if (num_clientes > 0) {
+                    depositar(clientes, num_clientes);
+                } else {
+                    printf("Nenhum cliente cadastrado.\n");
+                }
+                break;
+            case 6:
+                if (num_clientes > 0) {
+                    extrato(clientes, num_clientes);
+                } else {
+                    printf("Nenhum cliente cadastrado.\n");
+                }
+                break;
+            case 7:
+                if (num_clientes > 1) {
+                    transferencia(clientes, num_clientes);
+                } else {
+                    printf("É necessário ter pelo menos duas contas cadastradas para realizar uma transferência.\n");
+                }
+                break;
+
+            case 8:
                 printf("Saindo...\n");
                 break;
             default:
                 printf("Opção inválida!\n");
         }
-    } while (opcao != 9);
+    } while (opcao != 8);
     return 0;
 }
